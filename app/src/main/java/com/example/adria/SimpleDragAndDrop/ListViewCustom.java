@@ -12,31 +12,23 @@ import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
 import android.widget.AdapterView;
 import android.widget.GridView;
-import android.widget.TextView;
 
 import java.util.ArrayList;
 
 import static android.content.ContentValues.TAG;
-import static android.view.MotionEvent.INVALID_POINTER_ID;
 
 public class ListViewCustom extends GridView
 {
+    private long ANIMATION_DURATION = 225;
 
-    private long currId;
+    private long mCurrViewId;
     private long mNextItemId;
+    private View mCurrView;
+    private View mNextView;
     private AdapterCustom mAdapter;
 
-    ArrayList<String> mArrayList;
 
-    private View mNextView;
-    private View mCurrView;
-    private View draggedView;
-
-    public void setList(ArrayList<String> ArrayList)
-    {
-        mArrayList = ArrayList;
-    }
-
+    
     public ListViewCustom(Context context) {
         super(context);
         mAdapter = (AdapterCustom)getAdapter();
@@ -57,7 +49,6 @@ public class ListViewCustom extends GridView
 
     void init()
     {
-
         setOnTouchListener(mOnTouchListener);
         setOnItemLongClickListener(mOnLongClickListener);
     }
@@ -68,11 +59,10 @@ public class ListViewCustom extends GridView
         public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l)
         {
             View target = viewClick;
-            currId = index;
+            mCurrViewId = index;
             ClipData data = ClipData.newPlainText("DragData", "HOPA");
             target.startDrag(data, new View.DragShadowBuilder(target), target, 0);
-            draggedView = target;
-            draggedView.setVisibility(INVISIBLE);
+            target.setVisibility(INVISIBLE);
 
             return true;
         }
@@ -82,7 +72,6 @@ public class ListViewCustom extends GridView
     {
         @Override
         public boolean onTouch(final View v, MotionEvent event) {
-
             mAdapter = (AdapterCustom)getAdapter();
 
             if (event.getAction() == MotionEvent.ACTION_DOWN) {
@@ -106,27 +95,25 @@ public class ListViewCustom extends GridView
                                 int action = event.getAction();
                                 switch (action) {
                                     case DragEvent.ACTION_DRAG_STARTED:
-                                        Log.e(TAG, "test: "+mNextItemId +" curr: " + currId);
+                                        Log.e(TAG, "test: "+mNextItemId +" curr: " + mCurrViewId);
                                         break;
                                     case DragEvent.ACTION_DRAG_LOCATION:
 
                                         break;
                                     case DragEvent.ACTION_DRAG_ENTERED:
-                                        mCurrView = getViewFromId(currId);
+                                        mCurrView = getViewFromId(mCurrViewId);
                                         int position = parent.pointToPosition((int)v.getX(), (int)v.getY());
                                         mNextItemId = mAdapter.getItemId(position);
                                         mNextView = getViewFromId(mNextItemId);
                                         Log.e(TAG, "onTouch: mNextItemId: " + mNextItemId );
-                                        Log.e(TAG, "onTouch: currId: " + currId );
-                                        if (currId > -1 && mNextItemId > -1) {
+                                        Log.e(TAG, "onTouch: mCurrViewId: " + mCurrViewId);
+                                        if (mCurrViewId > -1 && mNextItemId > -1) {
                                             animateDragToStart(mCurrView, mNextView);
-                                            mAdapter.swapItems((int)currId,(int)mNextItemId);
+                                            mAdapter.swapItems((int) mCurrViewId,(int)mNextItemId);
                                             mAdapter.notifyDataSetChanged();
-                                            currId = mNextItemId;
+                                            mCurrViewId = mNextItemId;
                                         }
-
                                         break;
-
                                     case DragEvent.ACTION_DRAG_ENDED:
                                         final View droppedView = (View) event.getLocalState();
                                         droppedView.post(new Runnable(){
@@ -160,15 +147,13 @@ public class ListViewCustom extends GridView
             float topMargin = nextView.getY() - currView.getTop();
             float leftMargin = nextView.getX() - currView.getLeft();
 
-            // Animation translateAnimation = new TranslateAnimation(leftMargin - (mCurrView.getWidth() / 2), 0, topMargin - (mCurrView.getHeight() / 2), 0);
             Animation translateAnimation = new TranslateAnimation(leftMargin,0,topMargin,0);
-            translateAnimation.setDuration(300);
+            translateAnimation.setDuration(ANIMATION_DURATION);
             translateAnimation.setInterpolator(new AccelerateInterpolator());
             currView.startAnimation(translateAnimation);
             currView.setVisibility(View.VISIBLE);
             nextView.setVisibility(INVISIBLE);
         }
-
     }
 
     private View getViewFromId(long id)

@@ -23,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
                 "item 15","item 16","item 17", "item 18", "item 19",
                 "item 20" , "item 21","item 22","item 23","item 24"
         ));
-        grid.setList(values);
+
         grid.setAdapter(new AdapterCustom(values, this));
 
 
