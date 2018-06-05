@@ -19,7 +19,7 @@ import static android.content.ContentValues.TAG;
 
 public class ListViewCustom extends GridView
 {
-    private long ANIMATION_DURATION = 225;
+    private final static long ANIMATION_DURATION = 225;
 
     private long mCurrViewId;
     private long mNextItemId;
@@ -28,7 +28,7 @@ public class ListViewCustom extends GridView
     private AdapterCustom mAdapter;
 
 
-    
+
     public ListViewCustom(Context context) {
         super(context);
         mAdapter = (AdapterCustom)getAdapter();
@@ -58,11 +58,10 @@ public class ListViewCustom extends GridView
         @Override
         public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l)
         {
-            View target = viewClick;
             mCurrViewId = index;
             ClipData data = ClipData.newPlainText("DragData", "HOPA");
-            target.startDrag(data, new View.DragShadowBuilder(target), target, 0);
-            target.setVisibility(INVISIBLE);
+            viewClick.startDrag(data, new View.DragShadowBuilder(viewClick), viewClick, 0);
+            viewClick.setVisibility(INVISIBLE);
 
             return true;
         }
