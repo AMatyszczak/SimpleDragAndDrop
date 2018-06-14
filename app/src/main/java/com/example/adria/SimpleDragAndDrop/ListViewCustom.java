@@ -25,31 +25,32 @@ public class ListViewCustom extends GridView
     private long mNextItemId;
     private View mCurrView;
     private View mNextView;
+
     private AdapterCustom mAdapter;
 
-
+    private CompositeListener compositeListener;
 
     public ListViewCustom(Context context) {
         super(context);
-        mAdapter = (AdapterCustom)getAdapter();
         init();
     }
 
     public ListViewCustom(Context context, AttributeSet attrs) {
         super(context, attrs);
-        mAdapter = (AdapterCustom)getAdapter();
         init();
     }
 
     public ListViewCustom(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        mAdapter = (AdapterCustom)getAdapter();
         init();
     }
 
     void init()
     {
+        mAdapter = (AdapterCustom)getAdapter();
+        compositeListener = new CompositeListener();
         setOnTouchListener(mOnTouchListener);
+        super.setOnItemLongClickListener(compositeListener);
         setOnItemLongClickListener(mOnLongClickListener);
     }
 
@@ -63,7 +64,7 @@ public class ListViewCustom extends GridView
             viewClick.startDrag(data, new View.DragShadowBuilder(viewClick), viewClick, 0);
             viewClick.setVisibility(INVISIBLE);
 
-            return true;
+            return false;
         }
     };
 
@@ -153,6 +154,11 @@ public class ListViewCustom extends GridView
             currView.setVisibility(View.VISIBLE);
             nextView.setVisibility(INVISIBLE);
         }
+    }
+
+    @Override
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+       compositeListener.registerListener(listener);
     }
 
     private View getViewFromId(long id)
