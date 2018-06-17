@@ -2,6 +2,7 @@ package com.example.adria.SimpleDragAndDrop;
 
 import android.content.ClipData;
 import android.content.Context;
+import android.content.res.Resources;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ActionMode;
@@ -16,6 +17,7 @@ import android.view.animation.TranslateAnimation;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.RelativeLayout;
 
 import java.util.ArrayList;
 
@@ -25,7 +27,6 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
 {
     private final static long ANIMATION_DURATION = 225;
 
-    private boolean isDragging;
     private long mCurrViewId;
     private long mNextItemId;
     private View mCurrView;
@@ -36,6 +37,15 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
     private AdapterCustom mAdapter;
 
     private CompositeListener compositeListener;
+    private long emptySpaceId;
+    private int emptySpacePositionX;
+    private int emptySpacePositionY;
+
+
+    private boolean isDragging = false;
+    private View mDraggedView;
+    private long mDraggedViewId;
+
 
     public ListViewCustom(Context context) {
         super(context);
@@ -57,7 +67,7 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
         mAdapter = (AdapterCustom)getAdapter();
         compositeListener = new CompositeListener();
         setOnTouchListener(mOnTouchListener);
-        super.setOnItemLongClickListener(compositeListener);
+
         setOnItemLongClickListener(mOnLongClickListener);
     }
 
@@ -66,10 +76,8 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
         @Override
         public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l)
         {
-            mCurrViewId = index;
-            ClipData data = ClipData.newPlainText("DragData", "HOPA");
-            viewClick.startDrag(data, new View.DragShadowBuilder(viewClick), viewClick, 0);
-            viewClick.setVisibility(INVISIBLE);
+
+            //isDragging = true;
 
             return true;
         }
@@ -80,81 +88,64 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
     private AdapterView.OnTouchListener mOnTouchListener = new AdapterView.OnTouchListener()
     {
         @Override
-        public boolean onTouch(final View v, MotionEvent event) {
-            mAdapter = (AdapterCustom)getAdapter();
+        public boolean onTouch(final View view, MotionEvent event) {
 
-            if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                final GridView parent = (GridView) v;
+                mAdapter = (AdapterCustom)getAdapter();
+                final int X = (int) event.getX();
+                final int Y = (int) event.getY();
+                int position = pointToPosition(X,Y);
 
-                int x = (int) event.getX();
-                int y = (int) event.getY();
-                int position = parent.pointToPosition(x, y);
+                if(position > AdapterView.INVALID_POSITION)
+                switch (event.getAction() & MotionEvent.ACTION_MASK) {
+                    case MotionEvent.ACTION_DOWN:
+                        if(isDragging == false)
+                        {
+                            mDraggedViewId = mAdapter.getItemId(position);
+                            emptySpaceId = mDraggedViewId;
+                            mDraggedView = getViewFromId(mDraggedViewId);
+                            mDraggedView.setBackgroundColor(getResources().getColor(R.color.selected));
 
-                if (position > AdapterView.INVALID_POSITION) {
-
-                    int count = parent.getChildCount();
-                    for (int i = 0; i < count; i++)
+                            emptySpacePositionX = (int)mDraggedView.getX();
+                            emptySpacePositionY = (int)mDraggedView.getY();
+                            isDragging = true;
+                        }
+                        break;
+                    case MotionEvent.ACTION_UP:
                     {
-                        final View curr = parent.getChildAt(i);
-                        curr.setOnDragListener(new View.OnDragListener() {
-
-                            @Override
-                            public boolean onDrag(View v, DragEvent event) {
-                                boolean result = true;
-                                int action = event.getAction();
-                                switch (action) {
-                                    case DragEvent.ACTION_DRAG_STARTED:
-                                        Log.e(TAG, "test: "+mNextItemId +" curr: " + mCurrViewId);
-                                        isDragging = true;
-                                        break;
-                                    case DragEvent.ACTION_DRAG_LOCATION:
-
-                                        break;
-                                    case DragEvent.ACTION_DRAG_ENTERED:
-                                        mCurrView = getViewFromId(mCurrViewId);
-                                        int position = parent.pointToPosition((int)v.getX(), (int)v.getY());
-                                        mNextItemId = mAdapter.getItemId(position);
-                                        mNextView = getViewFromId(mNextItemId);
-                                        Log.e(TAG, "onTouch: mNextItemId: " + mNextItemId );
-                                        Log.e(TAG, "onTouch: mCurrViewId: " + mCurrViewId);
-                                        if (mCurrViewId > -1 && mNextItemId > -1) {
-                                            animateDragToStart(mCurrView, mNextView);
-                                            mAdapter.swapItems((int) mCurrViewId,(int)mNextItemId);
-                                            mAdapter.notifyDataSetChanged();
-                                            mCurrViewId = mNextItemId;
-                                        }
-                                        break;
-                                    case DragEvent.ACTION_DRAG_ENDED:
-                                        isDragging = false;
-                                        final View droppedView = (View) event.getLocalState();
-                                        droppedView.post(new Runnable(){
-                                            @Override
-                                            public void run() {
-                                                droppedView.setVisibility(VISIBLE);
-                                                if(mNextView != null )
-                                                    mNextView.setVisibility(VISIBLE);
-                                                if(mCurrView != null)
-                                                    mCurrView.setVisibility(VISIBLE);
-                                            }
-                                        });
-                                        break;
-                                    default:
-                                        isDragging = false;
-                                        if(mActionMode!= null)
-                                            mActionMode.finish();
-                                        result = false;
-                                        break;
-                                }
-                                isDragging = false;
-                                return result;
-                            }
-                        });
+                        mDraggedView.setBackgroundColor(getResources().getColor(R.color.unselected));
+                        mDraggedView.setX(emptySpacePositionX);
+                        mDraggedView.setY(emptySpacePositionY);
+                        isDragging = false;
                     }
+                        break;
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                        break;
+                    case MotionEvent.ACTION_POINTER_UP:
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        if(isDragging)
+                        {
+                            mDraggedView.setX(X-mDraggedView.getMeasuredWidth()/2);
+                            mDraggedView.setY(Y-mDraggedView.getMeasuredHeight()/2);
+                            mAdapter.notifyDataSetChanged();
+                            mAdapter.notifyDataSetInvalidated();
+                            //int pos = pointToPosition((int)event.getX(),(int)event.getY());
+                            View viewU = getViewFromId(mAdapter.getItemId(position));
+                            if(viewU != mDraggedView)
+                            {
+                                viewU.setBackgroundColor(getResources().getColor(R.color.colorAccent));
+                            }
+
+                        }
+
+                        break;
                 }
-            }
-            return false;
+                return true;
         }
+
     };
+
+
 
     private void animateDragToStart(View currView, View nextView) {
         if(currView!= null && nextView!= null)
@@ -169,16 +160,6 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
             currView.setVisibility(View.VISIBLE);
             nextView.setVisibility(INVISIBLE);
         }
-    }
-
-    @Override
-    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
-       compositeListener.registerListener(listener);
-    }
-
-    @Override
-    public void setMultiChoiceModeListener(MultiChoiceModeListener listener) {
-        super.setMultiChoiceModeListener(new MultiChoiceModeWrapper(listener));
     }
 
     private View getViewFromId(long id)
@@ -198,11 +179,6 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
 
     @Override
     public boolean onItemLongClick(AdapterView<?> adapterView, View view, int index, long l) {
-
-        mCurrViewId = index;
-        ClipData data = ClipData.newPlainText("DragData", "HOPA");
-        view.startDrag(data, new View.DragShadowBuilder(view), view, 0);
-        view.setVisibility(INVISIBLE);
 
         return true;
     }
@@ -251,17 +227,6 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
             {
                 isDraggable = false;
 
-                int item = position - getFirstVisiblePosition();
-                View view = getChildAt(item);
-
-
-                mCurrViewId = position;
-                ClipData data = ClipData.newPlainText("DragData", "HOPA");
-                view.startDrag(data, new View.DragShadowBuilder(view), view, 0);
-                if(selectOnly == false) {
-                    view.setVisibility(INVISIBLE);
-                    selectOnly = true;
-                }
             }
             mWrapped.onItemCheckedStateChanged(mode, position, id, checked);
         }
