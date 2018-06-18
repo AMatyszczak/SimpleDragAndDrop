@@ -3,6 +3,7 @@ package com.example.adria.SimpleDragAndDrop;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.res.Resources;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ActionMode;
@@ -23,8 +24,7 @@ import java.util.ArrayList;
 
 import static android.content.ContentValues.TAG;
 
-public class ListViewCustom extends GridView implements AdapterView.OnItemLongClickListener
-{
+public class ListViewCustom extends GridView implements AdapterView.OnItemLongClickListener {
     private final static long ANIMATION_DURATION = 225;
 
     private long mCurrViewId;
@@ -41,6 +41,8 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
     private int emptySpacePositionX;
     private int emptySpacePositionY;
 
+    View mDownView;
+    int mDownPosition=-1;
 
     private boolean isDragging = false;
     private View mDraggedView;
@@ -62,20 +64,17 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
         init();
     }
 
-    void init()
-    {
-        mAdapter = (AdapterCustom)getAdapter();
+    void init() {
+        mAdapter = (AdapterCustom) getAdapter();
         compositeListener = new CompositeListener();
         setOnTouchListener(mOnTouchListener);
 
         setOnItemLongClickListener(mOnLongClickListener);
     }
 
-    private AdapterView.OnItemLongClickListener mOnLongClickListener = new AdapterView.OnItemLongClickListener()
-    {
+    private AdapterView.OnItemLongClickListener mOnLongClickListener = new AdapterView.OnItemLongClickListener() {
         @Override
-        public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l)
-        {
+        public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l) {
 
             //isDragging = true;
 
@@ -84,66 +83,93 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
     };
 
 
-
-    private AdapterView.OnTouchListener mOnTouchListener = new AdapterView.OnTouchListener()
-    {
+    private AdapterView.OnTouchListener mOnTouchListener = new AdapterView.OnTouchListener() {
         @Override
         public boolean onTouch(final View view, MotionEvent event) {
+            GridView parent = (GridView) view;
+            mAdapter = (AdapterCustom) getAdapter();
+            final int X = (int) event.getX();
+            final int Y = (int) event.getY();
+            int position = pointToPosition(X, Y);
+            int[] listViewCoords = new int[2];
+            parent.getLocationOnScreen(listViewCoords);
+            int x = (int) event.getRawX() - listViewCoords[0];
+            int y = (int) event.getRawY() - listViewCoords[1];
+            View child;
+            Rect rect = new Rect();
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                child = parent.getChildAt(i);
+                child.getHitRect(rect);
+                if (rect.contains(x, y)) {
+                    mDownView = child;
+                    break;
+                }
+                Log.e(TAG, "I: "+i );
+            }
+            if (mDownView != null) {
+                mDownPosition = parent.getPositionForView(mDownView);
+            }
 
-                mAdapter = (AdapterCustom)getAdapter();
-                final int X = (int) event.getX();
-                final int Y = (int) event.getY();
-                int position = pointToPosition(X,Y);
+            int pos = pointToPosition((int) emptySpacePositionX, (int) emptySpacePositionY);
 
-                if(position > AdapterView.INVALID_POSITION)
+
+            if (position > AdapterView.INVALID_POSITION)
                 switch (event.getAction() & MotionEvent.ACTION_MASK) {
                     case MotionEvent.ACTION_DOWN:
-                        if(isDragging == false)
-                        {
+                        if (!isDragging) {
                             mDraggedViewId = mAdapter.getItemId(position);
                             emptySpaceId = mDraggedViewId;
                             mDraggedView = getViewFromId(mDraggedViewId);
-                            mDraggedView.setBackgroundColor(getResources().getColor(R.color.selected));
+                            mDraggedView.setElevation(16);
 
-                            emptySpacePositionX = (int)mDraggedView.getX();
-                            emptySpacePositionY = (int)mDraggedView.getY();
+
+                            emptySpacePositionX = (int) mDraggedView.getX();
+                            emptySpacePositionY = (int) mDraggedView.getY();
                             isDragging = true;
                         }
                         break;
-                    case MotionEvent.ACTION_UP:
-                    {
+                    case MotionEvent.ACTION_UP: {
                         mDraggedView.setBackgroundColor(getResources().getColor(R.color.unselected));
                         mDraggedView.setX(emptySpacePositionX);
                         mDraggedView.setY(emptySpacePositionY);
+                        mDraggedView.setElevation(0);
+                        mDraggedView.setEnabled(true);
                         isDragging = false;
                     }
-                        break;
+                    break;
                     case MotionEvent.ACTION_POINTER_DOWN:
                         break;
                     case MotionEvent.ACTION_POINTER_UP:
                         break;
                     case MotionEvent.ACTION_MOVE:
-                        if(isDragging)
-                        {
-                            mDraggedView.setX(X-mDraggedView.getMeasuredWidth()/2);
-                            mDraggedView.setY(Y-mDraggedView.getMeasuredHeight()/2);
-                            mAdapter.notifyDataSetChanged();
-                            mAdapter.notifyDataSetInvalidated();
-                            //int pos = pointToPosition((int)event.getX(),(int)event.getY());
-                            View viewU = getViewFromId(mAdapter.getItemId(position));
+                        if (isDragging) {
+                            position = pointToPosition((int)event.getX(),(int)event.getY());
+
+
+
+                            mDraggedView.setX(X - mDraggedView.getMeasuredWidth() / 2);
+                            mDraggedView.setY(Y - mDraggedView.getMeasuredHeight() / 2);
+
+                            View viewU = parent.getChildAt(position);
+                            View viewU2 = parent.getChildAt(mDownPosition);
+
+                            Log.e(TAG, "pos: " + position + " , " + mDownPosition);
+
                             if(viewU != mDraggedView)
-                            {
                                 viewU.setBackgroundColor(getResources().getColor(R.color.colorAccent));
-                            }
+
+                            if(viewU2 != mDraggedView)
+                                viewU2.setBackgroundColor(getResources().getColor(R.color.selected));
 
                         }
-
                         break;
                 }
-                return true;
+
+            return true;
         }
 
     };
+
 
 
 
