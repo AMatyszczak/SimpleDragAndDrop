@@ -24,13 +24,14 @@ import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
+import android.widget.AbsListView;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
 import static android.content.ContentValues.TAG;
 
-public class ListViewCustom extends GridView {
+public class ListViewCustom extends GridView implements AdapterView.OnItemLongClickListener{
 
     private final static long ANIMATION_DURATION = 300;
     private final static int LINE_THICKNESS = 10;
@@ -40,12 +41,6 @@ public class ListViewCustom extends GridView {
     private AdapterCustom mAdapter;
 
     private CompositeListener compositeListener;
-
-    private int emptySpacePositionX;
-    private int emptySpacePositionY;
-    private int emptySpacePosition;
-
-
 
     private int mLastEventY = -1;
     private int mLastEventX = -1;
@@ -84,9 +79,9 @@ public class ListViewCustom extends GridView {
 
     void init() {
         mAdapter = (AdapterCustom) getAdapter();
-        //compositeListener = new CompositeListener();
-        setOnTouchListener(mOnTouchListener);
-        setOnItemLongClickListener(mOnLongClickListener);
+        compositeListener = new CompositeListener();
+        super.setOnTouchListener(mOnTouchListener);
+        super.setOnItemLongClickListener(mOnLongClickListener);
     }
 
     private AdapterView.OnItemLongClickListener mOnLongClickListener = new AdapterView.OnItemLongClickListener() {
@@ -100,7 +95,6 @@ public class ListViewCustom extends GridView {
             mHoverCell = getAndHoverView(mDownView);
 
             mDownView.setVisibility(INVISIBLE);
-
             isDragging = true;
 
             return true;
@@ -190,43 +184,32 @@ public class ListViewCustom extends GridView {
 
                         if(viewID != INVALID_ID)
                         {
+                            if(mActionMode != null)
+                                mActionMode.finish();
                             final View viewUnder = getViewFromId(viewID);
-                            //mHoverCellOriginalBounds.offsetTo(viewUnder.getLeft(), viewUnder.getTop());
 
                             mAdapter.swapItems((int)mDraggedItemId, (int)viewID);
                             animateDragToStart(mDownView, viewUnder);
-                            mDraggedItemId = viewID;
 
                             viewUnder.setVisibility(INVISIBLE);
                             mDownView.setVisibility(VISIBLE);
+
                             mDownView = viewUnder;
+                            mDraggedItemId = viewID;
 
                             mAdapter.notifyDataSetChanged();
-
                         }
                         return false;
                     }
-
                     break;
                 case MotionEvent.ACTION_UP:
                     if(isDragging) {
-                        getViewFromId(mDraggedItemId).setVisibility(VISIBLE);
-                        mDraggedItemId = INVALID_ID;
-                        mHoverCell = null;
-
-                        invalidate();
-                        isDragging = false;
+                        draggingEnded();
                     }
-
-                        break;
+                    break;
                 case MotionEvent.ACTION_CANCEL:
                     if(isDragging) {
-                        getViewFromId(mDraggedItemId).setVisibility(VISIBLE);
-                        mDraggedItemId = INVALID_ID;
-                        mHoverCell = null;
-
-                        invalidate();
-                        isDragging = false;
+                        draggingEnded();
                     }
                     break;
                 case MotionEvent.ACTION_POINTER_UP:
@@ -234,24 +217,55 @@ public class ListViewCustom extends GridView {
                     final int pointerId = motionEvent.getPointerId(pointerIndex);
                     if(pointerId == mActivePointerId)
                         if(isDragging) {
-                            getViewFromId(mDraggedItemId).setVisibility(VISIBLE);
-                            mDraggedItemId = INVALID_ID;
-                            mHoverCell = null;
-
-                            invalidate();
+                            draggingEnded();
                         }
                     break;
                 default:
+                    if(mActionMode != null)
+                        mActionMode.finish();
                     break;
             }
             return false;
         }
     };
 
+    private void draggingEnded()
+    {
+        getViewFromId(mDraggedItemId).setVisibility(VISIBLE);
+        mDraggedItemId = INVALID_ID;
+        mHoverCell = null;
+        isDragging = false;
+
+        invalidate();
+
+    }
+    @Override
+    public boolean onItemLongClick(AdapterView<?> adapterView, View view, int i, long l) {
+        int position = pointToPosition(mDownX, mDownY);
+        int itemId = position - getFirstVisiblePosition();
+        mDownView = getChildAt(itemId);
+        mDraggedItemId = getAdapter().getItemId(position);
+        mHoverCell = getAndHoverView(mDownView);
+
+        mDownView.setVisibility(INVISIBLE);
+        isDragging = true;
+
+        return true;
+    }
+
+    @Override
+    public void setOnItemLongClickListener(OnItemLongClickListener listener) {
+        compositeListener.registerListener(listener);
+    }
+
+    @Override
+    public void setMultiChoiceModeListener(MultiChoiceModeListener listener) {
+        super.setMultiChoiceModeListener(new MultiChoiceModeWrapper(listener));
+    }
+
     private void animateDragToStart(View currView, View nextView) {
         if(currView!= null )
         {
-
             float topMargin = nextView.getTop() - currView.getTop();
             float leftMargin = nextView.getLeft() - currView.getLeft();
 
@@ -277,8 +291,6 @@ public class ListViewCustom extends GridView {
 		}
 		return null;
 	}
-
-
 
     @Override
     protected void dispatchDraw(Canvas canvas) {
@@ -324,18 +336,25 @@ public class ListViewCustom extends GridView {
             isDraggable = true;
             selectOnly = false;
             mActionMode = null;
-
         }
 
         @Override
         public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
             if( isDraggable)
             {
-                isDraggable = false;
+                int pos = pointToPosition(mDownX, mDownY);
+                int itemId = pos - getFirstVisiblePosition();
+                mDownView = getChildAt(itemId);
+                mDraggedItemId = getAdapter().getItemId(pos);
+                mHoverCell = getAndHoverView(mDownView);
 
+                mDownView.setVisibility(INVISIBLE);
+                isDragging = true;
+                isDraggable = false;
+                if(selectOnly == false)
+                    selectOnly = true;
             }
             mWrapped.onItemCheckedStateChanged(mode, position, id, checked);
         }
     }
-
 }

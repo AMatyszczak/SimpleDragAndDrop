@@ -34,9 +34,9 @@ public class MainActivity extends AppCompatActivity {
                 "item 20" , "item 21","item 22"
         ));
 
- //       grid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
-  //      grid.setMultiChoiceModeListener(new MyMultiChoiceListener());
-  //      grid.setSelector(android.R.color.darker_gray);
+        grid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
+        grid.setMultiChoiceModeListener(new MyMultiChoiceListener());
+        grid.setSelector(android.R.color.darker_gray);
         grid.setAdapter(new AdapterCustom(values, this));
 
 
