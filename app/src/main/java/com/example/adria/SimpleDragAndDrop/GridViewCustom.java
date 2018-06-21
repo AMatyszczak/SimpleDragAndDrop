@@ -1,10 +1,5 @@
 package com.example.adria.SimpleDragAndDrop;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ObjectAnimator;
-import android.animation.TypeEvaluator;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -12,38 +7,28 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
-import android.support.v7.widget.ViewUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.view.animation.AccelerateInterpolator;
 import android.view.animation.Animation;
 import android.view.animation.TranslateAnimation;
-import android.widget.AbsListView;
-import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.GridView;
 
 import static android.content.ContentValues.TAG;
 
-public class ListViewCustom extends GridView implements AdapterView.OnItemLongClickListener{
+public class GridViewCustom extends GridView implements AdapterView.OnItemLongClickListener{
 
     private final static long ANIMATION_DURATION = 300;
     private final static int LINE_THICKNESS = 10;
 
     private ActionMode mActionMode;
-
     private AdapterCustom mAdapter;
-
     private CompositeListener compositeListener;
-
-    private int mLastEventY = -1;
-    private int mLastEventX = -1;
 
     private int mDownX = -1;
     private int mDownY = -1;
@@ -62,17 +47,17 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
     private int mActivePointerId = INVALID_POINTER_ID;
 
 
-    public ListViewCustom(Context context) {
+    public GridViewCustom(Context context) {
         super(context);
         init();
     }
 
-    public ListViewCustom(Context context, AttributeSet attrs) {
+    public GridViewCustom(Context context, AttributeSet attrs) {
         super(context, attrs);
         init();
     }
 
-    public ListViewCustom(Context context, AttributeSet attrs, int defStyleAttr) {
+    public GridViewCustom(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         init();
     }
@@ -166,8 +151,8 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
                         break;
 
                     int pointerIndex = motionEvent.findPointerIndex(mActivePointerId);
-                    mLastEventX = (int)motionEvent.getX(pointerIndex);
-                    mLastEventY = (int)motionEvent.getY(pointerIndex);
+                    int mLastEventX = (int)motionEvent.getX(pointerIndex);
+                    int mLastEventY = (int)motionEvent.getY(pointerIndex);
 
 
                     int deltaY = mLastEventY - mDownY;
@@ -198,6 +183,7 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
                             mDraggedItemId = viewID;
 
                             mAdapter.notifyDataSetChanged();
+
                         }
                         return false;
                     }
@@ -306,7 +292,7 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
         boolean isDraggable;
         boolean selectOnly;
 
-        public MultiChoiceModeWrapper(MultiChoiceModeListener listener) {
+        MultiChoiceModeWrapper(MultiChoiceModeListener listener) {
             this.mWrapped = listener;
             this.selectOnly = false;
         }
@@ -351,7 +337,7 @@ public class ListViewCustom extends GridView implements AdapterView.OnItemLongCl
                 mDownView.setVisibility(INVISIBLE);
                 isDragging = true;
                 isDraggable = false;
-                if(selectOnly == false)
+                if(!selectOnly)
                     selectOnly = true;
             }
             mWrapped.onItemCheckedStateChanged(mode, position, id, checked);
