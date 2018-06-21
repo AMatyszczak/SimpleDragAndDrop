@@ -21,6 +21,9 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.animation.AccelerateInterpolator;
+import android.view.animation.Animation;
+import android.view.animation.TranslateAnimation;
 import android.widget.Adapter;
 import android.widget.AdapterView;
 import android.widget.GridView;
@@ -29,7 +32,7 @@ import static android.content.ContentValues.TAG;
 
 public class ListViewCustom extends GridView {
 
-    private final static long ANIMATION_DURATION = 500;
+    private final static long ANIMATION_DURATION = 300;
     private final static int LINE_THICKNESS = 10;
 
     private ActionMode mActionMode;
@@ -185,37 +188,21 @@ public class ListViewCustom extends GridView {
                         mHoverCell.setBounds(mHoverCellCurrentBounds);
                         invalidate();
 
-                        if(viewID != -1)
+                        if(viewID != INVALID_ID)
                         {
                             final View viewUnder = getViewFromId(viewID);
                             //mHoverCellOriginalBounds.offsetTo(viewUnder.getLeft(), viewUnder.getTop());
+
                             mAdapter.swapItems((int)mDraggedItemId, (int)viewID);
+                            animateDragToStart(mDownView, viewUnder);
                             mDraggedItemId = viewID;
 
                             viewUnder.setVisibility(INVISIBLE);
                             mDownView.setVisibility(VISIBLE);
                             mDownView = viewUnder;
+
                             mAdapter.notifyDataSetChanged();
 
-//                            final ViewTreeObserver observer = getViewTreeObserver();
-//                            observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
-//                                @Override
-//                                public boolean onPreDraw()
-//                                {
-//                                    observer.removeOnPreDrawListener(this);
-//
-//                                    int switchViewNewTop = viewUnder.getTop();
-//                                    int delta = viewUnder.getTop() - switchViewNewTop;
-//
-//                                    viewUnder.setTranslationY(delta);
-//
-//                                    ObjectAnimator animator = ObjectAnimator.ofFloat(viewUnder, View.TRANSLATION_Y, 0);
-//                                    animator.setDuration(ANIMATION_DURATION);
-//                                    animator.start();
-//
-//                                    return true;
-//                                }
-//                            });
                         }
                         return false;
                     }
@@ -261,20 +248,20 @@ public class ListViewCustom extends GridView {
         }
     };
 
-//    private void animateDragToStart(View currView) {
-//        if(currView!= null )
-//        {
-//
-//            float topMargin =  emptySpacePositionY - currView.getTop() ;
-//            float leftMargin = emptySpacePositionX - currView.getLeft() ;
-//
-//            Animation translateAnimation = new TranslateAnimation(0,leftMargin,0,topMargin);
-//            translateAnimation.setDuration(0);
-//            translateAnimation.setInterpolator(new AccelerateInterpolator());
-//            currView.startAnimation(translateAnimation);
-//
-//        }
-//    }
+    private void animateDragToStart(View currView, View nextView) {
+        if(currView!= null )
+        {
+
+            float topMargin = nextView.getTop() - currView.getTop();
+            float leftMargin = nextView.getLeft() - currView.getLeft();
+
+            Animation translateAnimation = new TranslateAnimation(leftMargin,0,topMargin,0);
+            translateAnimation.setDuration(ANIMATION_DURATION);
+            translateAnimation.setInterpolator(new AccelerateInterpolator());
+            currView.startAnimation(translateAnimation);
+
+        }
+    }
 
     public View getViewFromId(long id)
 	{
@@ -291,15 +278,6 @@ public class ListViewCustom extends GridView {
 		return null;
 	}
 
-	public int getPositionFromID(long itemID)
-    {
-        View v = getViewFromId(itemID);
-        if(v == null) {
-            return -1;
-        }
-        else
-            return getPositionForView(v);
-    }
 
 
     @Override
