@@ -2,26 +2,35 @@ package com.example.adria.SimpleDragAndDrop;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AbsListView;
-import android.widget.GridView;
+
+import com.example.adria.SimpleDragAndDrop.GridViewCustom.GridViewCustom;
+import com.example.adria.SimpleDragAndDrop.RecyclerViewCustom.Dragg.ItemTouchHelperCallback;
+import com.example.adria.SimpleDragAndDrop.RecyclerViewCustom.Dragg.OnStartDrag;
+import com.example.adria.SimpleDragAndDrop.RecyclerViewCustom.RecyclerListAdapter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity  implements OnStartDrag {
 
-    GridViewCustom grid;
+    GridViewCustom gridView;
+    private ItemTouchHelper mItemTouchHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        grid = findViewById(R.id.listView);
 
 
         final ArrayList<String> values = new ArrayList<> (Arrays.asList( "item 1", "item 2",
@@ -31,13 +40,22 @@ public class MainActivity extends AppCompatActivity {
                 "item 20" , "item 21","item 22"
         ));
 
-        grid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
-        grid.setMultiChoiceModeListener(new MyMultiChoiceListener());
-        grid.setSelector(android.R.color.darker_gray);
-        grid.setAdapter(new AdapterCustom(values, this));
+        RecyclerListAdapter adapter = new RecyclerListAdapter( values);
 
+        RecyclerView recyclerView = findViewById(R.id.recyclerView);
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setAdapter(adapter);
+        recyclerView.setLayoutManager(new GridLayoutManager(this, 3));
 
+        ItemTouchHelperCallback callback = new ItemTouchHelperCallback(adapter);
+        mItemTouchHelper = new ItemTouchHelper(callback);
+        mItemTouchHelper.attachToRecyclerView(recyclerView);
 
+    }
+
+    @Override
+    public void onStartDrag(RecyclerView.ViewHolder viewHolder) {
+        mItemTouchHelper.startDrag(viewHolder);
     }
 
     private class MyMultiChoiceListener implements AbsListView.MultiChoiceModeListener
@@ -69,10 +87,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onItemCheckedStateChanged(ActionMode actionMode, int i, long l, boolean b) {
 
-            View view = grid.getAdapter().getView(i,null,grid);
+            View view = gridView.getAdapter().getView(i,null,gridView);
             view.setBackgroundColor(getResources().getColor(R.color.colorAccent));
 
-            final int checkedItemCount = grid.getCheckedItemCount();
+            final int checkedItemCount = gridView.getCheckedItemCount();
             actionMode.setTitle(checkedItemCount + " Selected");
 
         }
