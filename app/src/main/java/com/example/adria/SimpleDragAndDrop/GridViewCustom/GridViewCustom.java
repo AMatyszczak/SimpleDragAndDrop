@@ -1,4 +1,4 @@
-package com.example.adria.SimpleDragAndDrop;
+package com.example.adria.SimpleDragAndDrop.GridViewCustom;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -7,7 +7,9 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.BitmapDrawable;
+import android.os.Parcelable;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,6 +49,7 @@ public class GridViewCustom extends GridView implements AdapterView.OnItemLongCl
     private int mActivePointerId = INVALID_POINTER_ID;
 
 
+
     public GridViewCustom(Context context) {
         super(context);
         init();
@@ -73,6 +76,7 @@ public class GridViewCustom extends GridView implements AdapterView.OnItemLongCl
         @Override
         public boolean onItemLongClick(AdapterView<?> adapterView, final View viewClick, final int index, final long l) {
 
+            Log.e(TAG, "onItemLongClick: " );
             int position = pointToPosition(mDownX, mDownY);
             int itemId = position - getFirstVisiblePosition();
             mDownView = getChildAt(itemId);
@@ -131,7 +135,6 @@ public class GridViewCustom extends GridView implements AdapterView.OnItemLongCl
         return bitmap;
 
     }
-
 
     private AdapterView.OnTouchListener mOnTouchListener = new OnTouchListener() {
         @Override
